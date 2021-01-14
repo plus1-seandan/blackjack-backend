@@ -1,4 +1,5 @@
 const express = require("express");
+const { getDeck, shuffleDeck } = require("./util/cards");
 
 const main = async () => {
   const PORT = 8081;
@@ -12,6 +13,11 @@ const main = async () => {
       console.log(err);
     }
   });
+
+  //testing
+  let deck = getDeck();
+  deck = shuffleDeck(deck);
+  console.log(deck);
 };
 
 try {
