@@ -1,9 +1,13 @@
 const express = require("express");
 const { getDeck, shuffleDeck } = require("./util/cards");
+const router = require("./routes");
 
 const main = async () => {
   const PORT = 8081;
   const app = express();
+
+  //add middleware
+  app.use(router);
 
   //server listening on port 8081
   app.listen(PORT, (err) => {
