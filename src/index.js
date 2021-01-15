@@ -1,13 +1,20 @@
 const express = require("express");
+const redis = require("redis");
+
 const { getDeck, shuffleDeck } = require("./util/cards");
 const router = require("./routes");
+const { redisClient, app } = require("./server");
 
 const main = async () => {
   const PORT = 8081;
-  const app = express();
 
   //add middleware
   app.use(router);
+
+  //connect to reddis
+  redisClient.on("connect", function () {
+    console.log("connected to redis");
+  });
 
   //server listening on port 8081
   app.listen(PORT, (err) => {

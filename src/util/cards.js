@@ -1,17 +1,26 @@
-let suits = ["spades", "diamonds", "clubs", "hearts"];
-let values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-
-//create card
-const card = (suit, value) => {
-  return { suit, value };
-};
+const suits = ["S", "D", "C", "H"];
+const values = [
+  "A",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "J",
+  "Q",
+  "K",
+];
 
 //create deck
 const getDeck = () => {
   let deck = [];
   suits.forEach((suit) => {
     values.forEach((val) => {
-      deck.push(card(suit, val));
+      deck.push(`${val} ${suit}`);
     });
   });
   return deck;
@@ -26,7 +35,6 @@ const shuffleDeck = (deck) => {
     deck[i] = cardToSwap;
     deck[swapIndex] = currentCard;
   }
-  console.log(deck);
   return deck;
 };
 
