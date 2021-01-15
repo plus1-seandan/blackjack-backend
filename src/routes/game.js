@@ -25,16 +25,16 @@ router.post("/", async (req, res) => {
 router.patch("/deal", async (req, res) => {
   try {
     const gameId = req.query.id;
+
     //get the first 2 cards from the deck
-    const cards = await redisClient.lrange(gameId, 0, 1);
+    const cards = [];
 
     //pop the first 2 cards from the deck
     for (let i = 0; i < 2; i++) {
-      redisClient.lpop([gameId], function (err, reply) {
-        if (err) return cb(err);
-        console.log("Popped item", reply);
-      });
+      const card = await redisClient.lpop([gameId]);
+      cards.push(card);
     }
+
     //updated db with the actions
     cards.map((card) => {
       console.log(card);
@@ -47,6 +47,29 @@ router.patch("/deal", async (req, res) => {
     });
 
     res.send(cards);
+  } catch (error) {
+    res.status(400).send({
+      message: error.message,
+    });
+  }
+});
+
+//deal cards
+router.patch("/hit", async (req, res) => {
+  try {
+    const gameId = req.query.id;
+
+    //pop the first  card from the deck
+    const card = await redisClient.lpop([gameId]);
+
+    //updated db with the actions
+    models.Move.create({
+      action: "hit",
+      details: card,
+      userId: 1,
+      gameId,
+    });
+    res.send(card);
   } catch (error) {
     res.status(400).send({
       message: error.message,

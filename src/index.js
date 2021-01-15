@@ -1,5 +1,6 @@
 const express = require("express");
 const redis = require("redis");
+const cors = require("cors");
 
 const { getDeck, shuffleDeck } = require("./util/cards");
 const router = require("./routes");
@@ -11,6 +12,7 @@ const main = async () => {
   const PORT = 8081;
 
   //add middleware
+  app.use(cors("*"));
   app.use(router);
 
   //sync database
