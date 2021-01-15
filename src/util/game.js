@@ -1,12 +1,11 @@
 const { getDeck, shuffleDeck } = require("./cards");
 const { redisClient } = require("../server");
 
-
-const startGame = () => {
-  //get deck and shuffle
+const setupGame = (gameId) => {
+  //create deck and shuffle
   let deck = shuffleDeck(getDeck());
   //push deck to redis
-  pushToRedis("DECK", deck);
+  pushToRedis(gameId, deck);
 };
 
 const pushToRedis = (key, arr) => {
@@ -15,4 +14,4 @@ const pushToRedis = (key, arr) => {
   });
 };
 
-module.exports = { startGame };
+module.exports = { setupGame };
