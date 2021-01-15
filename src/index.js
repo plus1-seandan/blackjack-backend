@@ -4,12 +4,20 @@ const redis = require("redis");
 const { getDeck, shuffleDeck } = require("./util/cards");
 const router = require("./routes");
 const { redisClient, app } = require("./server");
+const db = require("./db");
+const models = require("./models");
 
 const main = async () => {
   const PORT = 8081;
 
   //add middleware
   app.use(router);
+
+  //sync database
+  await db.sync({
+    models,
+    // force: true
+  }); //force syncs database for development
 
   //connect to reddis
   redisClient.on("connect", function () {
@@ -26,9 +34,9 @@ const main = async () => {
   });
 
   //testing
-  let deck = getDeck();
-  deck = shuffleDeck(deck);
-  console.log(deck);
+  // let deck = getDeck();
+  // deck = shuffleDeck(deck);
+  // console.log(deck);
 };
 
 try {
