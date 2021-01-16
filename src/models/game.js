@@ -1,7 +1,15 @@
 const { Sequelize } = require("sequelize");
 const db = require("../db");
 
-const Game = db.define("game", {});
+const Game = db.define("game", {
+  status: {
+    type: Sequelize.STRING,
+  },
+  points: {
+    type: Sequelize.INTEGER,
+    defaultValue: 0,
+  },
+});
 
 Game.associate = (models) => {
   Game.belongsTo(models.User);
