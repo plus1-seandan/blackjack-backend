@@ -5,8 +5,11 @@ const Move = db.define("move", {
   action: {
     type: Sequelize.STRING,
   },
-  details: {
+  card: {
     type: Sequelize.STRING,
+  },
+  value: {
+    type: Sequelize.INTEGER,
   },
 });
 

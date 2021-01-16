@@ -1,3 +1,5 @@
+const { parse } = require("uuid");
+
 const suits = ["S", "D", "C", "H"];
 const values = [
   "A",
@@ -25,7 +27,16 @@ const getDeck = () => {
   });
   return deck;
 };
-
+const cardValue = (card) => {
+  const value = card.split(" ")[0];
+  if (value === "A") {
+    return -1;
+  }
+  if (value === "K" || value === "Q" || value === "J") {
+    return 10;
+  }
+  return parseInt(value);
+};
 //perform fisher yates shuffle
 const shuffleDeck = (deck) => {
   for (let i = deck.length - 1; i > 0; i--) {
@@ -38,4 +49,4 @@ const shuffleDeck = (deck) => {
   return deck;
 };
 
-module.exports = { getDeck, shuffleDeck };
+module.exports = { getDeck, shuffleDeck, cardValue };
