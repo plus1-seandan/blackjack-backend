@@ -4,6 +4,7 @@ const db = require("../db");
 const Game = db.define("game", {
   status: {
     type: Sequelize.STRING,
+    defaultValue: "playing",
   },
   points: {
     type: Sequelize.INTEGER,
