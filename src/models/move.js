@@ -1,7 +1,13 @@
 const { Sequelize } = require("sequelize");
+const { uuid } = require("uuidv4");
+
 const db = require("../db");
 
 const Move = db.define("move", {
+  id: {
+    primaryKey: true,
+    type: Sequelize.UUID,
+  },
   action: {
     type: Sequelize.STRING,
   },
@@ -12,6 +18,8 @@ const Move = db.define("move", {
     type: Sequelize.INTEGER,
   },
 });
+
+Move.beforeCreate((move) => (move.id = uuid()));
 
 Move.associate = (models) => {
   Move.belongsTo(models.User);
