@@ -1,9 +1,8 @@
 const express = require("express");
 
-const { setupGame, deal } = require("../util/game");
+const { setupGame, deal, hit, stand } = require("../util/game");
 const { redisClient } = require("../server");
 const models = require("../models");
-const { cardValue } = require("../util/cards");
 
 const router = express.Router();
 
@@ -39,23 +38,27 @@ router.patch("/deal", async (req, res) => {
   }
 });
 
-//deal cards
+//player hits
 router.patch("/hit", async (req, res) => {
   try {
-    const gameId = req.query.id;
-
-    //pop the first  card from the deck
-    const card = await redisClient.lpop([gameId]);
-    console.log(card);
-    //updated db with the actions
-    await models.Move.create({
-      action: "hit",
-      card: card,
-      userId: 1,
-      gameId,
+    const gameId = req.query.game;
+    const playerId = req.query.player;
+    const data = await hit(gameId, playerId);
+    res.send(data);
+  } catch (error) {
+    res.status(400).send({
+      message: error.message,
     });
-    // calculatePoints(gameId, playerId);
-    res.send(card);
+  }
+});
+
+//player stands, run dealer logic
+router.patch("/stand", async (req, res) => {
+  try {
+    const gameId = req.query.game;
+    const playerId = req.query.player;
+    const data = await stand(gameId, playerId);
+    // res.send(data);
   } catch (error) {
     res.status(400).send({
       message: error.message,

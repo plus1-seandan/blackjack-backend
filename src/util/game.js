@@ -5,9 +5,47 @@ const models = require("../models");
 const deal = async (game, player) => {
   const cards = await drawCards(game, 2);
   await logMoves("deal", player, game, cards);
-  const data = await formatGameData(game, player);
+  const data = await getGameData(game, player);
   return data;
 };
+
+const hit = async (game, player) => {
+  const cards = await drawCards(game, 1);
+  await logMoves("hit", player, game, cards);
+  const data = await getGameData(game, player);
+  return data;
+};
+
+const stand = async (game, player) => {
+  //get player points
+  const playerGame = await getGameData(game, player);
+  let dealerGame = await getGameData(game, -1);
+
+  await dealerPlay(game, player);
+
+  dealerGame = await getGameData(game, -1);
+
+  console.log(dealerGame.points, playerGame.points);
+};
+
+const dealerPlay = async (game, player) => {
+  console.log(
+    "*******************************Start DEALER PLAY LOGIC***************************"
+  );
+  //recursive method to hit until dealer wins or busts
+  const playerGame = await getGameData(game, player);
+  const dealerGame = await getGameData(game, -1);
+  if (dealerGame.points >= playerGame.points) {
+    console.log(
+      "*******************************END DEALER PLAY LOGIC***************************"
+    );
+    return;
+  }
+  await hit(game, -1);
+  await dealerPlay(game, player);
+};
+
+const setGameStatus = () => {};
 
 const setupGame = (gameId) => {
   //create deck and shuffle
@@ -80,13 +118,17 @@ const calculatePoints = (moves) => {
     result.push(a);
     result.push(b);
   }
-  // result.points = result.filter((value) => value <= 21 && value > 0);
-  return result;
+
+  //in the future, just return the max value if there are two
+  return Math.max(...result);
+
+  // result.filter((value) => value <= 21 && value > 0);
 };
-const formatGameData = async (game, player) => {
+const getGameData = async (game, player) => {
   const moves = await getMoves(game, player);
   const cards = getCards(moves);
   const points = calculatePoints(moves);
+
   return { game, player, cards, points };
 };
 
@@ -96,4 +138,4 @@ const pushToRedis = (key, arr) => {
   });
 };
 
-module.exports = { setupGame, logMoves, formatGameData, drawCards, deal };
+module.exports = { setupGame, deal, hit, stand };
