@@ -1,7 +1,13 @@
 const { Sequelize } = require("sequelize");
+const { uuid } = require("uuidv4");
+
 const db = require("../db");
 
 const User = db.define("user", {
+  id: {
+    primaryKey: true,
+    type: Sequelize.UUID,
+  },
   username: {
     type: Sequelize.STRING,
     unique: true,
@@ -30,6 +36,8 @@ const User = db.define("user", {
     type: Sequelize.STRING,
   },
 });
+
+User.beforeCreate((user) => (user.id = uuid()));
 
 User.associate = (models) => {
   User.hasMany(models.Game);

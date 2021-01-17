@@ -3,13 +3,17 @@ const express = require("express");
 const { setupGame, deal, hit, stand } = require("../util/game");
 const { redisClient } = require("../server");
 const models = require("../models");
+const { setPlayerId } = require("../util/misc");
 
 const router = express.Router();
+require("dotenv").config();
 
 //create game /games/
 router.post("/", async (req, res) => {
   try {
-    const game = await models.Game.create({ userId: req.query.user || 1 });
+    const game = await models.Game.create({
+      userId: req.query.user || "5e02b923-1a71-447e-a549-50985b8772c2",
+    });
     //create deck and push deck to redis with game id as the key
     setupGame(game.id);
     // formatGameData(game.id, 1);
@@ -25,11 +29,11 @@ router.post("/", async (req, res) => {
 //deal cards
 router.patch("/deal", async (req, res) => {
   try {
-    const gameId = parseInt(req.query.game);
-    const playerId = parseInt(req.query.player);
-
+    const gameId = req.query.game;
+    const playerId = setPlayerId(req.query.player);
+    console.log({ playerId, gameId });
     const data = await deal(gameId, playerId);
-
+    console.log(playerId);
     res.send(data);
   } catch (error) {
     res.status(400).send({
@@ -58,7 +62,8 @@ router.patch("/stand", async (req, res) => {
     const gameId = req.query.game;
     const playerId = req.query.player;
     const data = await stand(gameId, playerId);
-    // res.send(data);
+    console.log(data);
+    res.send(data);
   } catch (error) {
     res.status(400).send({
       message: error.message,

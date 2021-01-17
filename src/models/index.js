@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 const User = require("./user");
 const Game = require("./game");
-const Move = require("./moves");
+const Move = require("./move");
 const db = require("../db");
 
 const models = {

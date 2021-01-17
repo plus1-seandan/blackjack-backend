@@ -52,7 +52,7 @@ const main = async () => {
   //sync database
   await db.sync({
     models,
-    // force: true
+    // force: true,
   }); //force syncs database for development
 
   //connect to reddis
