@@ -44,8 +44,12 @@ const User = db.define("user", {
 User.beforeCreate((user) => (user.id = uuid()));
 
 User.associate = (models) => {
-  User.hasMany(models.Game);
-  User.hasMany(models.Move);
+  User.belongsToMany(models.Game, {
+    through: models.Hand,
+    foreignKey: "playerId",
+  });
+  // User.hasMany(models.Game);
+  // User.hasMany(models.Move);
 };
 
 module.exports = User;

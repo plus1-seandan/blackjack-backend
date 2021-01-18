@@ -7,6 +7,7 @@ const {
   stand,
   bet,
   doubleDown,
+  split,
 } = require("../util/game");
 const { redisClient } = require("../server");
 const models = require("../models");
@@ -18,13 +19,13 @@ require("dotenv").config();
 //create game /games
 router.post("/", async (req, res) => {
   try {
-    const userId = req.query.user;
+    const playerId = req.query.player;
     const deckId = req.query.deck;
     // const game = await models.Game.create({
     //   userId: req.query.user || "8472f167-b80e-43ff-baf1-4d891b74d38a",
     // });
     //create deck and push deck to redis with game id as the key
-    const game = await setupGame(userId, deckId);
+    const game = await setupGame(playerId, deckId);
     // formatGameData(game.id, 1);
     //player id will be provided by passport once a user is authenticated
     res.send(game);
@@ -77,7 +78,7 @@ router.patch("/stand", async (req, res) => {
   }
 });
 
-//player stands, run dealer logic
+//player double down
 router.patch("/double", async (req, res) => {
   try {
     const gameId = req.query.game;
@@ -92,19 +93,19 @@ router.patch("/double", async (req, res) => {
   }
 });
 
-//player stands, run dealer logic
-// router.patch("/split", async (req, res) => {
-//   try {
-//     const gameId = req.query.game;
-//     const playerId = req.query.player;
-//     const data = await split(gameId, playerId);
-//     res.send(data);
-//   } catch (error) {
-//     res.status(400).send({
-//       message: error.message,
-//     });
-//   }
-// });
+//split hand
+router.patch("/split", async (req, res) => {
+  try {
+    const gameId = req.query.game;
+    const playerId = req.query.player;
+    const data = await split(gameId, playerId);
+    res.send(data);
+  } catch (error) {
+    res.status(400).send({
+      message: error.message,
+    });
+  }
+});
 
 //player bet
 router.patch("/bet", async (req, res) => {

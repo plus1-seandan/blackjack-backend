@@ -26,13 +26,42 @@ const hit = async (gameId, playerId) => {
 };
 
 const doubleDown = async (gameId, playerId, _bet) => {
-  console.log({ gameId, playerId, _bet });
   const _hit = await hit(gameId, playerId);
   const data = await bet(gameId, _bet);
   const playerGame = await getPlayerMoves(gameId, playerId);
   return playerGame;
   // const data2 = await stand(gameId, playerId);
   // console.log({ data2 });
+};
+
+const split = async (gameId, playerId) => {
+  console.log("hit");
+  const moves = await getMoves(gameId, playerId);
+  // console.log({ moves });
+  const game = await createGameCopy(gameId);
+  await splitMoves(gameId, game.id, playerId);
+  // console.log(game);
+};
+const splitMoves = async (oldGameId, newGameId, playerId) => {
+  const moves = await getMoves(oldGameId, playerId);
+  const moveId = moves[0].id;
+  console.log({ moveId });
+  const res = await models.Move.update(
+    {
+      gameId: newGameId,
+    },
+    {
+      where: { id: moveId },
+      returning: true, // needed for affectedRows to be populated
+      plain: true, // makes sure that the returned instances are just plain objects
+    }
+  );
+};
+const createGameCopy = async (gameId) => {
+  //findOne Game where gameId
+  const _game = await getGame(gameId);
+  delete _game.id;
+  return await models.Game.create(_game);
 };
 
 const stand = async (gameId, playerId) => {
@@ -159,17 +188,33 @@ const setGameStatus = async (game, dealerPoints, playerPoints) => {
   return res;
 };
 
-const setupGame = async (userId, deckId) => {
+const setupGame = async (playerId, deckId) => {
   if (!deckId) {
     //if no deck specified, create a new deck, return deckId which is the redis key
     deckId = await setupDeck();
   }
   //create game
-  const game = await models.Game.create({
-    userId: userId || "8472f167-b80e-43ff-baf1-4d891b74d38a",
+  const game = await creategame(deckId, playerId);
+  //add dealer and the player to the game
+  await addPlayers(game.id, [process.env.DEALER, playerId]);
+};
+
+const creategame = async (deckId, userId) => {
+  return await models.Game.create({
+    userId: userId || "48c17b75-2b9e-4875-9682-2ffe571dd916",
     deckId: deckId,
   });
-  return game;
+};
+
+const addPlayers = async (gameId, players) => {
+  try {
+    players.forEach(async (playerId) => {
+      console.log({ playerId });
+      await models.Hand.create({ playerId: playerId, gameId });
+    });
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 const drawCards = async (deckId, count) => {
@@ -211,9 +256,9 @@ const logMoves = async (action, user, game, data) => {
   return moves;
 };
 
-const getMoves = async (game, player) => {
+const getMoves = async (gameId, playerId) => {
   const moves = await models.Move.findAll({
-    where: { gameId: game, userId: player },
+    where: { gameId: gameId, userId: playerId },
     raw: true,
   });
   return moves;
@@ -271,4 +316,4 @@ const getGameStatus = async (gameId) => {
   return game.status;
 };
 
-module.exports = { setupGame, deal, hit, stand, bet, doubleDown };
+module.exports = { setupGame, deal, hit, stand, bet, doubleDown, split };
