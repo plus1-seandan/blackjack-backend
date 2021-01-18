@@ -10,6 +10,27 @@ const {
 const { redisClient } = require("../server");
 const models = require("../models");
 
+const settle = async (gameId, playerId) => {
+  const dealerGame = await getPlayerGameData(gameId, process.env.DEALER);
+
+  const _hands = await getMyHands(gameId, playerId);
+
+  const promises = _hands.map(async (hand) => {
+    //calculate win/lose status, and payout
+    return await settleHand(hand.id, dealerGame.points);
+  });
+  const hands = await Promise.all(promises);
+  return hands;
+};
+
+const settleHand = async (handId, dealerPoints) => {
+  let hand = await getHandInfo(handId);
+  const handCardsInfo = await getPlayerHandData(handId);
+  await setGameStatus(hand, handCardsInfo, dealerPoints);
+  hand = await getHandInfo(handId);
+  return hand;
+};
+
 const deal = async (gameId, playerId) => {
   //get the handId
   const hands = await getMyHands(gameId, playerId);
@@ -45,8 +66,6 @@ const doubleDown = async (gameId, playerId, _bet) => {
 
   const _hit = await hit(gameId, playerId);
   return await getPlayerGameData(gameId, playerId);
-  // const data2 = await stand(gameId, playerId);
-  // console.log({ data2 });
 };
 
 const split = async (gameId, playerId) => {
@@ -57,7 +76,7 @@ const split = async (gameId, playerId) => {
   //add a new hand record with the same player id
   const newHand = await addPlayer(gameId, playerId);
   //copy the old bet to the new split hand
-  await setBet(newHandId, bet);
+  await setBet(newHand.id, bet);
   //split the hand
   await splitMoves(oldHandId, newHand.id);
   //return data
@@ -132,9 +151,9 @@ const setPayout = async (gameId, playerId) => {
   return res;
 };
 
-const isBlackjack = (playerGame) => {
+const isBlackjack = (hand) => {
   //if first 2 hands equal 2 hands, it's a blackjack
-  if (playerGame.cards.length === 2 && playerGame.points === 21) {
+  if (hand.cards.length === 2 && hand.points === 21) {
     return true;
   }
   return false;
@@ -190,31 +209,45 @@ const getGame = async (gameId) => {
   return game;
 };
 
-const setGameStatus = async (game, dealerPoints, playerPoints) => {
+const setGameStatus = async (hand, handCardsInfo, dealerPoints) => {
   let status;
-  if (playerPoints > 21) {
+  let payout;
+  if (handCardsInfo.points > 21) {
     status = "lose";
   } else if (dealerPoints > 21) {
     status = "win";
-  } else if (dealerPoints === playerPoints) {
+  } else if (dealerPoints === handCardsInfo.points) {
     status = "draw";
-  } else if (dealerPoints > playerPoints) {
+  } else if (dealerPoints > handCardsInfo.points) {
     status = "lose";
   } else {
     status = "win";
   }
 
-  const res = await models.Game.update(
+  const blackjack = isBlackjack(handCardsInfo);
+
+  if (status === "lose") {
+    payout = -1 * hand.bet;
+  } else if (status === "draw") {
+    payout = 0;
+  } else {
+    if (blackjack) {
+      payout = 1.5 * hand.bet;
+    } else {
+      payout = hand.bet;
+    }
+  }
+  await models.Hand.update(
     {
+      payout: payout,
       status: status,
     },
     {
-      where: { id: game },
+      where: { id: hand.id },
       returning: true, // needed for affectedRows to be populated
       plain: true, // makes sure that the returned instances are just plain objects
     }
   );
-  return res;
 };
 
 const setupGame = async (playerId, deckId) => {
@@ -307,7 +340,12 @@ const getHandCards = async (handId) => {
   });
   return handCards;
 };
-
+const getHandInfo = async (handId) => {
+  return await models.Hand.findOne({
+    where: { id: handId },
+    raw: true,
+  });
+};
 const getCards = (moves) => {
   const cards = moves.map(function (move) {
     return move["card"];
@@ -344,6 +382,12 @@ const calculatePoints = (cards) => {
   return Math.max(...result);
 };
 
+const getPlayerHandData = async (handId, playerId) => {
+  const cards = await getHandCards(handId);
+  const points = calculatePoints(cards);
+  return { cards, points };
+};
+
 const getPlayerGameData = async (gameId, playerId) => {
   const hands = await getMyHands(gameId, playerId);
   const handId = hands[0].id;
@@ -362,4 +406,13 @@ const getGameStatus = async (gameId) => {
   return game.status;
 };
 
-module.exports = { setupGame, deal, hit, stand, bet, doubleDown, split };
+module.exports = {
+  setupGame,
+  deal,
+  hit,
+  stand,
+  bet,
+  doubleDown,
+  split,
+  settle,
+};

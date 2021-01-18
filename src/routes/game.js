@@ -8,6 +8,7 @@ const {
   bet,
   doubleDown,
   split,
+  settle,
 } = require("../util/game");
 const { redisClient } = require("../server");
 const models = require("../models");
@@ -115,6 +116,20 @@ router.patch("/bet", async (req, res) => {
 
     const _bet = parseInt(req.query.bet);
     const data = await bet(gameId, playerId, _bet);
+    res.send(data);
+  } catch (error) {
+    res.status(400).send({
+      message: error.message,
+    });
+  }
+});
+
+//player bet
+router.patch("/settle", async (req, res) => {
+  try {
+    const gameId = req.query.game;
+    const playerId = req.query.player;
+    const data = await settle(gameId, playerId);
     res.send(data);
   } catch (error) {
     res.status(400).send({
