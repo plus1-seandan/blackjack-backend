@@ -13,28 +13,28 @@ const models = require("../models");
 const deal = async (gameId, playerId) => {
   //get the handId
 
-  const hand = await getHand(gameId, playerId);
+  const handId = await getHandId(gameId, playerId);
 
   const cards = await drawCards(await getDeckId(gameId), 2);
-  await addCardsToHand("deal", hand.id, gameId, cards);
+  await addCardsToHand("deal", handId, gameId, cards);
   return await getPlayerGameData(gameId, playerId);
 };
 
-const getHand = async (gameId, playerId) => {
+const getHandId = async (gameId, playerId) => {
   try {
     const hand = await models.Hand.findOne({
       where: { gameId: gameId, playerId: playerId },
     });
-    return hand;
+    return hand.id;
   } catch (e) {
     console.log(e);
   }
 };
 
 const hit = async (gameId, playerId) => {
-  const hand = await getHand(gameId, playerId);
+  const handId = await getHandId(gameId, playerId);
   const cards = await drawCards(await getDeckId(gameId), 1);
-  await addCardsToHand("hit", hand.id, gameId, cards);
+  await addCardsToHand("hit", handId, gameId, cards);
   return await getPlayerGameData(gameId, playerId);
 };
 
@@ -129,12 +129,14 @@ const isBlackjack = (playerGame) => {
 };
 
 const bet = async (gameId, playerId, bet) => {
-  const res = await models.Game.update(
+  const handId = await getHandId(gameId, playerId);
+  console.log({ handId });
+  const res = await models.Hand.update(
     {
       bet: bet,
     },
     {
-      where: { id: gameId },
+      where: { id: handId },
       returning: true, // needed for affectedRows to be populated
       plain: true, // makes sure that the returned instances are just plain objects
     }
@@ -315,8 +317,7 @@ const calculatePoints = (cards) => {
 };
 
 const getPlayerGameData = async (gameId, playerId) => {
-  const hand = await getHand(gameId, playerId);
-  const cards = await getHandCards(hand.id);
+  const cards = await getHandCards(await getHandId(gameId, playerId));
   // const cards = getCards(moves);
   const points = calculatePoints(cards);
   // const game = await getGame(gameId);
