@@ -39,10 +39,10 @@ const hit = async (gameId, playerId) => {
 };
 
 const doubleDown = async (gameId, playerId, _bet) => {
+  const data = await bet(gameId, playerId, _bet);
+
   const _hit = await hit(gameId, playerId);
-  const data = await bet(gameId, _bet);
-  const playerGame = await getPlayerGameData(gameId, playerId);
-  return playerGame;
+  return await getPlayerGameData(gameId, playerId);
   // const data2 = await stand(gameId, playerId);
   // console.log({ data2 });
 };
@@ -83,12 +83,13 @@ const stand = async (gameId, playerId) => {
   await dealerPlay(gameId, playerId);
 
   dealerGame = await getPlayerGameData(gameId, process.env.DEALER);
-  await setGameStatus(gameId, dealerGame.points, playerGame.points);
-  await setPayout(gameId, playerId);
-  const data = await getPlayerGameData(gameId, process.env.DEALER);
-  const game = await getGame(gameId);
+  return dealerGame;
+  // await setGameStatus(gameId, dealerGame.points, playerGame.points);
+  // await setPayout(gameId, playerId);
+  // const data = await getPlayerGameData(gameId, process.env.DEALER);
+  // const game = await getGame(gameId);
 
-  return { ...data, game };
+  // return { ...data, game };
 };
 
 const setPayout = async (gameId, playerId) => {
