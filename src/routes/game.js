@@ -42,7 +42,6 @@ router.patch("/deal", async (req, res) => {
     const gameId = req.query.game;
     const playerId = setPlayerId(req.query.player);
     const data = await deal(gameId, playerId);
-    console.log(data);
     res.send(data);
   } catch (error) {
     res.status(400).send({

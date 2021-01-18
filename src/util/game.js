@@ -12,23 +12,29 @@ const models = require("../models");
 
 const deal = async (gameId, playerId) => {
   //get the handId
-  const handId = await getHandId(gameId, playerId);
-  const cards = await drawCards(await getDeckId(gameId), 2);
 
+  const handId = await getHandId(gameId, playerId);
+
+  const cards = await drawCards(await getDeckId(gameId), 2);
   await addCardsToHand("deal", handId, gameId, cards);
   return await getPlayerGameData(gameId, playerId);
 };
 
 const getHandId = async (gameId, playerId) => {
-  const hand = await models.Hand.findOne({
-    where: { gameId: gameId, playerId, playerId },
-  });
-  return hand.id;
+  try {
+    const hand = await models.Hand.findOne({
+      where: { gameId: gameId, playerId: playerId },
+    });
+    return hand.id;
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 const hit = async (gameId, playerId) => {
+  const handId = await getHandId(gameId, playerId);
   const cards = await drawCards(await getDeckId(gameId), 1);
-  await addCardsToHand("hit", playerId, gameId, cards);
+  await addCardsToHand("hit", handId, gameId, cards);
   return await getPlayerGameData(gameId, playerId);
 };
 
@@ -42,7 +48,6 @@ const doubleDown = async (gameId, playerId, _bet) => {
 };
 
 const split = async (gameId, playerId) => {
-  console.log("hit");
   const moves = await getHandCards(gameId, playerId);
   // console.log({ moves });
   const game = await createGameCopy(gameId);
@@ -52,7 +57,6 @@ const split = async (gameId, playerId) => {
 const splitMoves = async (oldGameId, newGameId, playerId) => {
   const moves = await getHandCards(oldGameId, playerId);
   const moveId = moves[0].id;
-  console.log({ moveId });
   const res = await models.Move.update(
     {
       gameId: newGameId,
@@ -215,14 +219,15 @@ const creategame = async (deckId, userId) => {
 };
 
 const addPlayers = async (gameId, players) => {
-  try {
-    players.forEach(async (playerId) => {
-      console.log({ playerId });
-      await models.Hand.create({ playerId: playerId, gameId });
+  const promises = players.map(async (playerId) => {
+    const hand = await models.Hand.create({
+      playerId: playerId,
+      gameId: gameId,
     });
-  } catch (e) {
-    console.log(e);
-  }
+    return hand;
+  });
+  const hands = await Promise.all(promises);
+  return hands;
 };
 
 const drawCards = async (deckId, count) => {
@@ -261,6 +266,7 @@ const addCardsToHand = async (action, handId, gameId, data) => {
     return handCard;
   });
   const handCards = await Promise.all(promises);
+
   return handCards;
 };
 
