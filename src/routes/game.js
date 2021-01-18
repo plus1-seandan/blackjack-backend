@@ -25,10 +25,10 @@ router.post("/", async (req, res) => {
     //   userId: req.query.user || "8472f167-b80e-43ff-baf1-4d891b74d38a",
     // });
     //create deck and push deck to redis with game id as the key
-    const game = await setupGame(playerId, deckId);
+    const gameId = await setupGame(playerId, deckId);
     // formatGameData(game.id, 1);
     //player id will be provided by passport once a user is authenticated
-    res.send(game);
+    res.send(gameId);
   } catch (error) {
     res.status(400).send({
       message: error.message,
@@ -42,6 +42,7 @@ router.patch("/deal", async (req, res) => {
     const gameId = req.query.game;
     const playerId = setPlayerId(req.query.player);
     const data = await deal(gameId, playerId);
+    console.log(data);
     res.send(data);
   } catch (error) {
     res.status(400).send({
