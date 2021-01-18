@@ -12,8 +12,12 @@ const Game = db.define("game", {
     type: Sequelize.STRING,
     defaultValue: "playing",
   },
-  points: {
-    type: Sequelize.INTEGER,
+  bet: {
+    type: Sequelize.DECIMAL(10, 2),
+    defaultValue: 0,
+  },
+  payout: {
+    type: Sequelize.DECIMAL(10, 2),
     defaultValue: 0,
   },
 });
@@ -23,6 +27,7 @@ Game.beforeCreate((game) => (game.id = uuid()));
 Game.associate = (models) => {
   Game.belongsTo(models.User);
   Game.hasMany(models.Move);
+  Game.belongsTo(models.Deck);
 };
 
 module.exports = Game;

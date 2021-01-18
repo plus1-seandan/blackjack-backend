@@ -1,4 +1,6 @@
 const { parse } = require("uuid");
+const models = require("../models");
+const { redisClient } = require("../server");
 
 const suits = ["S", "D", "C", "H"];
 const values = [
@@ -17,14 +19,27 @@ const values = [
   "K",
 ];
 
+const setupDeck = async () => {
+  //grab deck and shuffle
+  const _deck = shuffleDeck(createDeck());
+  //create deck record in db
+  const deck = await models.Deck.create({});
+  //pushes deck to redis
+  pushToRedis(deck.id, _deck);
+
+  //return deckId
+  return deck.id;
+};
+
 //create deck
-const getDeck = () => {
+const createDeck = () => {
   let deck = [];
   suits.forEach((suit) => {
     values.forEach((val) => {
       deck.push(`${val} ${suit}`);
     });
   });
+
   return deck;
 };
 const cardValue = (card) => {
@@ -37,6 +52,7 @@ const cardValue = (card) => {
   }
   return parseInt(value);
 };
+
 //perform fisher yates shuffle
 const shuffleDeck = (deck) => {
   for (let i = deck.length - 1; i > 0; i--) {
@@ -49,4 +65,10 @@ const shuffleDeck = (deck) => {
   return deck;
 };
 
-module.exports = { getDeck, shuffleDeck, cardValue };
+const pushToRedis = (key, arr) => {
+  arr.forEach((a) => {
+    redisClient.lpush(key, a);
+  });
+};
+
+module.exports = { createDeck, shuffleDeck, cardValue, setupDeck, pushToRedis };
