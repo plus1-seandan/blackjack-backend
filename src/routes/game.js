@@ -111,8 +111,10 @@ router.patch("/split", async (req, res) => {
 router.patch("/bet", async (req, res) => {
   try {
     const gameId = req.query.game;
+    const playerId = req.query.player;
+
     const _bet = parseInt(req.query.bet);
-    const data = await bet(gameId, _bet);
+    const data = await bet(gameId, playerId, _bet);
     res.send(data);
   } catch (error) {
     res.status(400).send({
