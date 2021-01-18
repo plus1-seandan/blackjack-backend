@@ -1,33 +1,110 @@
 require("dotenv").config();
 
-const { getDeck, shuffleDeck, cardValue } = require("./cards");
+const {
+  createDeck,
+  shuffleDeck,
+  cardValue,
+  setupDeck,
+  pushToRedis,
+} = require("./cards");
 const { redisClient } = require("../server");
 const models = require("../models");
 
-const deal = async (game, player) => {
-  const cards = await drawCards(game, 2);
-  await logMoves("deal", player, game, cards);
-  return await getPlayerGameData(game, player);
+const deal = async (gameId, playerId) => {
+  console.log("start deal");
+  const cards = await drawCards(await getDeckId(gameId), 2);
+  console.log(cards);
+
+  await logMoves("deal", playerId, gameId, cards);
+  return await getPlayerMoves(gameId, playerId);
 };
 
-const hit = async (game, player) => {
-  const cards = await drawCards(game, 1);
-  await logMoves("hit", player, game, cards);
-  return await getPlayerGameData(game, player);
+const hit = async (gameId, playerId) => {
+  const cards = await drawCards(await getDeckId(gameId), 1);
+  await logMoves("hit", playerId, gameId, cards);
+  return await getPlayerMoves(gameId, playerId);
+};
+
+const doubleDown = async (gameId, playerId, _bet) => {
+  console.log({ gameId, playerId, _bet });
+  const _hit = await hit(gameId, playerId);
+  const data = await bet(gameId, _bet);
+  const playerGame = await getPlayerMoves(gameId, playerId);
+  return playerGame;
+  // const data2 = await stand(gameId, playerId);
+  // console.log({ data2 });
 };
 
 const stand = async (gameId, playerId) => {
   //get player points
-  const playerGame = await getPlayerGameData(gameId, playerId);
-  let dealerGame = await getPlayerGameData(gameId, process.env.DEALER);
+  const playerGame = await getPlayerMoves(gameId, playerId);
+  let dealerGame = await getPlayerMoves(gameId, process.env.DEALER);
 
   await dealerPlay(gameId, playerId);
 
-  dealerGame = await getPlayerGameData(gameId, process.env.DEALER);
+  dealerGame = await getPlayerMoves(gameId, process.env.DEALER);
   await setGameStatus(gameId, dealerGame.points, playerGame.points);
+  await setPayout(gameId, playerId);
+  const data = await getPlayerMoves(gameId, process.env.DEALER);
   const game = await getGame(gameId);
-  const data = await getPlayerGameData(gameId, process.env.DEALER);
-  return { ...data, status: game.status };
+
+  return { ...data, game };
+};
+
+const setPayout = async (gameId, playerId) => {
+  //later gotta handle payout for blackjack
+  let payout;
+  let { bet, status } = await getGame(gameId);
+  const playerGame = await getPlayerMoves(gameId, playerId);
+  const blackjack = isBlackjack(playerGame);
+  if (blackjack) {
+    //3:2 payout
+    payout = 1.5 * bet;
+  } else if (status === "win") {
+    payout = bet;
+  } else if (status === "draw") {
+    payout = 0;
+  } else {
+    payout = -1 * bet;
+  }
+  const res = await models.Game.update(
+    {
+      payout: payout,
+    },
+    {
+      where: { id: gameId },
+      returning: true, // needed for affectedRows to be populated
+      plain: true, // makes sure that the returned instances are just plain objects
+    }
+  );
+  return res;
+};
+
+const isBlackjack = (playerGame) => {
+  //if first 2 hands equal 2 hands, it's a blackjack
+  if (playerGame.cards.length === 2 && playerGame.points === 21) {
+    return true;
+  }
+  return false;
+};
+
+const bet = async (gameId, bet) => {
+  const res = await models.Game.update(
+    {
+      bet: bet,
+    },
+    {
+      where: { id: gameId },
+      returning: true, // needed for affectedRows to be populated
+      plain: true, // makes sure that the returned instances are just plain objects
+    }
+  );
+  return res;
+};
+
+const getDeckId = async (gameId) => {
+  const game = await models.Game.findOne({ where: { id: gameId } });
+  return game.deckId;
 };
 
 const dealerPlay = async (game, player) => {
@@ -35,8 +112,8 @@ const dealerPlay = async (game, player) => {
     "*******************************Run DEALER PLAY LOGIC***************************"
   );
   //recursive method to hit until dealer wins or busts
-  const playerGame = await getPlayerGameData(game, player);
-  const dealerGame = await getPlayerGameData(game, process.env.DEALER);
+  const playerGame = await getPlayerMoves(game, player);
+  const dealerGame = await getPlayerMoves(game, process.env.DEALER);
   if (dealerGame.points >= playerGame.points) {
     console.log(
       "*******************************END DEALER PLAY LOGIC***************************"
@@ -79,18 +156,23 @@ const setGameStatus = async (game, dealerPoints, playerPoints) => {
       plain: true, // makes sure that the returned instances are just plain objects
     }
   );
-  console.log(res);
   return res;
 };
 
-const setupGame = (gameId) => {
-  //create deck and shuffle
-  let deck = shuffleDeck(getDeck());
-  //push deck to redis
-  pushToRedis(gameId, deck);
+const setupGame = async (userId, deckId) => {
+  if (!deckId) {
+    //if no deck specified, create a new deck, return deckId which is the redis key
+    deckId = await setupDeck();
+  }
+  //create game
+  const game = await models.Game.create({
+    userId: userId || "8472f167-b80e-43ff-baf1-4d891b74d38a",
+    deckId: deckId,
+  });
+  return game;
 };
 
-const drawCards = async (gameId, count) => {
+const drawCards = async (deckId, count) => {
   // async function asyncRedisLPop(gameId) {
   //   return new Promise((resolve, reject) => {
   //     redisClient.lpop([gameId], (err, value) => {
@@ -100,13 +182,17 @@ const drawCards = async (gameId, count) => {
   //     });
   //   });
   // }
-  console.log(gameId);
+
+  //reshuffle cards everytime for now
+  const _deck = shuffleDeck(createDeck());
+  //pushes deck to redis
+  pushToRedis(deckId, _deck);
+
   let cards = [];
   for (let i = 0; i < count; i++) {
-    const card = await redisClient.lpop([gameId]);
+    const card = await redisClient.lpop([deckId]);
     cards.push(card);
   }
-  console.log(cards);
   return cards;
 };
 
@@ -169,18 +255,20 @@ const calculatePoints = (moves) => {
   return Math.max(...result);
 };
 
-const getPlayerGameData = async (game, player) => {
-  const moves = await getMoves(game, player);
+const getPlayerMoves = async (gameId, playerId) => {
+  const moves = await getMoves(gameId, playerId);
   const cards = getCards(moves);
   const points = calculatePoints(moves);
-
-  return { game, player, cards, points };
+  const game = await getGame(gameId);
+  return { gameId, playerId, cards, points, game };
 };
 
-const pushToRedis = (key, arr) => {
-  arr.forEach((a) => {
-    redisClient.lpush(key, a);
+const getGameStatus = async (gameId) => {
+  const game = await models.Game.findOne({
+    where: { id: gameId },
+    raw: true,
   });
+  return game.status;
 };
 
-module.exports = { setupGame, deal, hit, stand };
+module.exports = { setupGame, deal, hit, stand, bet, doubleDown };

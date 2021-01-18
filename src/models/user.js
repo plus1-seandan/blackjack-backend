@@ -32,6 +32,10 @@ const User = db.define("user", {
       },
     },
   },
+  cash: {
+    type: Sequelize.DECIMAL(20, 2),
+    defaultValue: 0,
+  },
   password: {
     type: Sequelize.STRING,
   },

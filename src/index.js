@@ -52,6 +52,7 @@ const main = async () => {
   //sync database
   await db.sync({
     models,
+    alter: true,
     // force: true,
   }); //force syncs database for development
 
