@@ -6,6 +6,7 @@ const db = new Sequelize("poker", "postgres", "postgres", {
   define: {
     underscored: true,
   },
+  logging: false,
 });
 
 module.exports = db;
