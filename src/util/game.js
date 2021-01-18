@@ -22,11 +22,11 @@ const deal = async (gameId, playerId) => {
 
 const getMyHands = async (gameId, playerId) => {
   try {
-    const hand = await models.Hand.findOne({
+    const hands = await models.Hand.findAll({
       where: { gameId: gameId, playerId: playerId },
       raw: true,
     });
-    return [hand];
+    return hands;
   } catch (e) {
     console.log(e);
   }
@@ -52,34 +52,33 @@ const doubleDown = async (gameId, playerId, _bet) => {
 const split = async (gameId, playerId) => {
   //get original hand id
   let hands = await getMyHands(gameId, playerId);
-  console.log({ hands });
   const oldHandId = hands[0].id;
+  const bet = hands[0].bet;
   //add a new hand record with the same player id
   const newHand = await addPlayer(gameId, playerId);
-  console.log({ newHand });
-  hands = await getMyHands(gameId, playerId);
-  console.log({ hands });
-  //create a new hand
-  // const moves = await getHandCards(gameId, playerId);
-  // // console.log({ moves });
-  // const game = await createGameCopy(gameId);
-  // await splitMoves(gameId, game.id, playerId);
-  // // console.log(game);
+  //copy the old bet to the new split hand
+  await setBet(newHandId, bet);
+  //split the hand
+  await splitMoves(oldHandId, newHand.id);
+  //return data
+  return await getPlayerGameData(gameId, playerId);
 };
-const splitMoves = async (oldGameId, newGameId, playerId) => {
-  // const moves = await getHandCards(oldGameId, playerId);
-  // const moveId = moves[0].id;
-  // const res = await models.Move.update(
-  //   {
-  //     gameId: newGameId,
-  //   },
-  //   {
-  //     where: { id: moveId },
-  //     returning: true, // needed for affectedRows to be populated
-  //     plain: true, // makes sure that the returned instances are just plain objects
-  //   }
-  // );
+const splitMoves = async (oldHandId, newHandId) => {
+  const cards = await getHandCards(oldHandId);
+  //get one of the two cards that are dealt.
+  const cardOneId = cards[0].id;
+  const res = await models.HandCard.update(
+    {
+      handId: newHandId,
+    },
+    {
+      where: { id: cardOneId },
+      returning: true, // needed for affectedRows to be populated
+      plain: true, // makes sure that the returned instances are just plain objects
+    }
+  );
 };
+
 const createGameCopy = async (gameId) => {
   //findOne Game where gameId
   const _game = await getGame(gameId);
@@ -144,6 +143,10 @@ const isBlackjack = (playerGame) => {
 const bet = async (gameId, playerId, bet) => {
   const hands = await getMyHands(gameId, playerId);
   const handId = hands[0].id;
+  return await setBet(handId, bet);
+};
+
+const setBet = async (handId, bet) => {
   const res = await models.Hand.update(
     {
       bet: bet,
