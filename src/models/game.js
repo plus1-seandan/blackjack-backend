@@ -17,8 +17,12 @@ Game.associate = (models) => {
   Game.belongsTo(models.Deck);
 
   Game.belongsToMany(models.User, {
-    through: models.Hand,
+    through: {
+      model: models.Hand,
+      unique: false,
+    },
     foreignKey: "gameId",
+    // foreignKeyConstraint: false,
   });
 };
 

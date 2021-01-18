@@ -12,27 +12,29 @@ const models = require("../models");
 
 const deal = async (gameId, playerId) => {
   //get the handId
-
-  const handId = await getHandId(gameId, playerId);
-
+  const hands = await getMyHands(gameId, playerId);
+  const handId = hands[0].id;
   const cards = await drawCards(await getDeckId(gameId), 2);
   await addCardsToHand("deal", handId, gameId, cards);
-  return await getPlayerGameData(gameId, playerId);
+  const result = await getPlayerGameData(gameId, playerId);
+  return result;
 };
 
-const getHandId = async (gameId, playerId) => {
+const getMyHands = async (gameId, playerId) => {
   try {
     const hand = await models.Hand.findOne({
       where: { gameId: gameId, playerId: playerId },
+      raw: true,
     });
-    return hand.id;
+    return [hand];
   } catch (e) {
     console.log(e);
   }
 };
 
 const hit = async (gameId, playerId) => {
-  const handId = await getHandId(gameId, playerId);
+  const hands = await getMyHands(gameId, playerId);
+  const handId = hands[0].id;
   const cards = await drawCards(await getDeckId(gameId), 1);
   await addCardsToHand("hit", handId, gameId, cards);
   return await getPlayerGameData(gameId, playerId);
@@ -48,25 +50,35 @@ const doubleDown = async (gameId, playerId, _bet) => {
 };
 
 const split = async (gameId, playerId) => {
-  const moves = await getHandCards(gameId, playerId);
-  // console.log({ moves });
-  const game = await createGameCopy(gameId);
-  await splitMoves(gameId, game.id, playerId);
-  // console.log(game);
+  //get original hand id
+  let hands = await getMyHands(gameId, playerId);
+  console.log({ hands });
+  const oldHandId = hands[0].id;
+  //add a new hand record with the same player id
+  const newHand = await addPlayer(gameId, playerId);
+  console.log({ newHand });
+  hands = await getMyHands(gameId, playerId);
+  console.log({ hands });
+  //create a new hand
+  // const moves = await getHandCards(gameId, playerId);
+  // // console.log({ moves });
+  // const game = await createGameCopy(gameId);
+  // await splitMoves(gameId, game.id, playerId);
+  // // console.log(game);
 };
 const splitMoves = async (oldGameId, newGameId, playerId) => {
-  const moves = await getHandCards(oldGameId, playerId);
-  const moveId = moves[0].id;
-  const res = await models.Move.update(
-    {
-      gameId: newGameId,
-    },
-    {
-      where: { id: moveId },
-      returning: true, // needed for affectedRows to be populated
-      plain: true, // makes sure that the returned instances are just plain objects
-    }
-  );
+  // const moves = await getHandCards(oldGameId, playerId);
+  // const moveId = moves[0].id;
+  // const res = await models.Move.update(
+  //   {
+  //     gameId: newGameId,
+  //   },
+  //   {
+  //     where: { id: moveId },
+  //     returning: true, // needed for affectedRows to be populated
+  //     plain: true, // makes sure that the returned instances are just plain objects
+  //   }
+  // );
 };
 const createGameCopy = async (gameId) => {
   //findOne Game where gameId
@@ -130,8 +142,8 @@ const isBlackjack = (playerGame) => {
 };
 
 const bet = async (gameId, playerId, bet) => {
-  const handId = await getHandId(gameId, playerId);
-  console.log({ handId });
+  const hands = await getMyHands(gameId, playerId);
+  const handId = hands[0].id;
   const res = await models.Hand.update(
     {
       bet: bet,
@@ -216,21 +228,33 @@ const setupGame = async (playerId, deckId) => {
 
 const creategame = async (deckId, userId) => {
   return await models.Game.create({
-    userId: userId || "48c17b75-2b9e-4875-9682-2ffe571dd916",
+    userId: userId || "6b0e7926-de71-4f26-81bd-23af2431194f",
     deckId: deckId,
   });
 };
 
 const addPlayers = async (gameId, players) => {
-  const promises = players.map(async (playerId) => {
+  try {
+    const promises = players.map(async (playerId) => {
+      return await addPlayer(gameId, playerId);
+    });
+    const hands = await Promise.all(promises);
+    return hands;
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const addPlayer = async (gameId, playerId) => {
+  try {
     const hand = await models.Hand.create({
       playerId: playerId,
       gameId: gameId,
     });
     return hand;
-  });
-  const hands = await Promise.all(promises);
-  return hands;
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 const drawCards = async (deckId, count) => {
@@ -318,7 +342,9 @@ const calculatePoints = (cards) => {
 };
 
 const getPlayerGameData = async (gameId, playerId) => {
-  const cards = await getHandCards(await getHandId(gameId, playerId));
+  const hands = await getMyHands(gameId, playerId);
+  const handId = hands[0].id;
+  const cards = await getHandCards(handId);
   // const cards = getCards(moves);
   const points = calculatePoints(cards);
   // const game = await getGame(gameId);

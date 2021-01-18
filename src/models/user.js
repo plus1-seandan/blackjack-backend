@@ -45,8 +45,12 @@ User.beforeCreate((user) => (user.id = uuid()));
 
 User.associate = (models) => {
   User.belongsToMany(models.Game, {
-    through: models.Hand,
+    through: {
+      model: models.Hand,
+      unique: false,
+    },
     foreignKey: "playerId",
+    // foreignKeyConstraint: false,
   });
   // User.hasMany(models.Game);
   // User.hasMany(models.Move);
