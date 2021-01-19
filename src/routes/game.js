@@ -19,12 +19,9 @@ router.post("/", async (req, res) => {
   try {
     const playerId = req.query.player;
     const deckId = req.query.deck;
-    // const game = await models.Game.create({
-    //   userId: req.query.user || "8472f167-b80e-43ff-baf1-4d891b74d38a",
-    // });
+
     //create deck and push deck to redis with game id as the key
     const gameId = await setupGame(playerId, deckId);
-    // formatGameData(game.id, 1);
     //player id will be provided by passport once a user is authenticated
     res.send(gameId);
   } catch (error) {
@@ -38,7 +35,10 @@ router.post("/", async (req, res) => {
 router.patch("/deal", async (req, res) => {
   try {
     const gameId = req.query.game;
-    const playerId = setPlayerId(req.query.player);
+    if (gameId == -1) {
+      return;
+    }
+    const playerId = await setPlayerId(req.query.player);
     const data = await deal(gameId, playerId);
     res.send(data);
   } catch (error) {

@@ -163,4 +163,5 @@ module.exports = {
   addCardsToHand,
   isBlackjack,
   getHandCards,
+  addPlayer,
 };

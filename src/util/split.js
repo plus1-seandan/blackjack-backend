@@ -3,7 +3,7 @@ require("dotenv").config();
 const {
   getPlayerGameData,
   getMyHands,
-  addPlayers,
+  addPlayer,
   getHandCards,
 } = require("./game");
 
@@ -16,7 +16,7 @@ const split = async (gameId, playerId) => {
   const oldHandId = hands[0].id;
   const bet = hands[0].bet;
   //add a new hand record with the same player id
-  const newHand = await addPlayers(gameId, playerId);
+  const newHand = await addPlayer(gameId, playerId);
   //copy the old bet to the new split hand
   await setBet(newHand.id, bet);
   //split the hand
