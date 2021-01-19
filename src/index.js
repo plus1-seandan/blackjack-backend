@@ -1,5 +1,3 @@
-const express = require("express");
-const redis = require("redis");
 const cors = require("cors");
 const passport = require("passport");
 const flash = require("express-flash");
@@ -7,7 +5,6 @@ const session = require("express-session");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 
-const { getDeck, shuffleDeck } = require("./util/cards");
 const router = require("./routes");
 const { redisClient, app } = require("./server");
 const db = require("./db");

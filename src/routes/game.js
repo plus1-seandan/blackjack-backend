@@ -1,17 +1,14 @@
 const express = require("express");
 
-const {
-  setupGame,
-  deal,
-  hit,
-  stand,
-  bet,
-  doubleDown,
-  split,
-  settle,
-} = require("../util/game");
-const { redisClient } = require("../server");
-const models = require("../models");
+const { settle } = require("../util/settle");
+const { setupGame } = require("../util/setup");
+const { deal } = require("../util/deal");
+const { hit } = require("../util/hit");
+const { stand } = require("../util/stand");
+const { doubleDown } = require("../util/double");
+const { split } = require("../util/split");
+const { bet } = require("../util/bet");
+
 const { setPlayerId } = require("../util/misc");
 
 const router = express.Router();
