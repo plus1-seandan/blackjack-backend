@@ -10,26 +10,30 @@ const { split } = require("../util/split");
 const { bet } = require("../util/bet");
 
 const { setPlayerId } = require("../util/misc");
+const passport = require("passport");
 
 const router = express.Router();
 require("dotenv").config();
 
-//create game /games
-router.post("/", async (req, res) => {
-  try {
-    const playerId = req.query.player;
-    const deckId = req.query.deck;
+router.post(
+  "/",
+  passport.authenticate("jwt", { session: false }),
+  async function (req, res) {
+    try {
+      const playerId = req.user.id;
+      const deckId = req.query.deck;
 
-    //create deck and push deck to redis with game id as the key
-    const gameId = await setupGame(playerId, deckId);
-    //player id will be provided by passport once a user is authenticated
-    res.send(gameId);
-  } catch (error) {
-    res.status(400).send({
-      message: error.message,
-    });
+      //create deck and push deck to redis with game id as the key
+      const gameId = await setupGame(playerId, deckId);
+      //player id will be provided by passport once a user is authenticated
+      res.send(gameId);
+    } catch (error) {
+      res.status(400).send({
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 //deal cards
 router.patch("/deal", async (req, res) => {
