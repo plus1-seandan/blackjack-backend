@@ -14,7 +14,6 @@ const setupPassport = require("./config/passport");
 
 const main = async () => {
   const PORT = 8081;
-  // const JWTStrategy = passportJWT.Strategy;
 
   //sync database
   await db.sync({
