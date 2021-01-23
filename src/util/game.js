@@ -132,7 +132,7 @@ const calculatePoints = (cards) => {
     result.push(a);
     result.push(b);
   }
-
+  result = result.filter((val) => val <= 21);
   return Math.max(...result);
 };
 

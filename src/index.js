@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
+const bodyParser = require("body-parser");
 
 require("dotenv").config();
 
@@ -31,9 +32,13 @@ const main = async () => {
   app.use(cors());
   app.use(passport.initialize());
   setupPassport(passport);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cookieParser());
+  // app.use(express.json());
+  // app.use(express.urlencoded({ extended: false }));
+  // app.use(bodyParser.urlencoded({ extended: true }));
+  // app.use(cookieParser());
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
+
   app.use(router);
 
   app.listen(PORT, console.log(`Server running on  ${PORT}`));

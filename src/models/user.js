@@ -32,6 +32,10 @@ const User = db.define("user", {
       },
     },
   },
+  image: {
+    type: Sequelize.STRING,
+    defaultValue: "https://avatarfiles.alphacoders.com/209/thumb-209215.jpg",
+  },
   cash: {
     type: Sequelize.DECIMAL(20, 2),
     defaultValue: 0,
