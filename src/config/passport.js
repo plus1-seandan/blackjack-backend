@@ -25,7 +25,7 @@ function setupPassport(passport) {
     new JWTStrategy(
       {
         jwtFromRequest: passportJWT.ExtractJwt.fromAuthHeaderAsBearerToken(),
-        secretOrKey: process.env.SESSION_SECRET,
+        secretOrKey: "somesecret",
       },
       async (jwt_payload, done) => {
         const user = await models.User.findOne({

@@ -19,7 +19,8 @@ const settle = async (gameId, playerId) => {
     return await settleHand(hand.id, dealerGame.points);
   });
   const hands = await Promise.all(promises);
-  return hands;
+  //only return the first and for now because we are not handling multiple players or splits
+  return hands[0];
 };
 
 const settleHand = async (handId, dealerPoints) => {
