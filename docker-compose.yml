@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.3"
 services:
   redis:
     image: redis
@@ -6,17 +6,19 @@ services:
       - webnet
   db:
     image: postgres
-    networks:
-      - webnet
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
       POSTGRES_DB: poker
+    networks:
+      - webnet
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
   web:
     image: seanysdan/pocker-backend:latest
     networks:
@@ -24,9 +26,9 @@ services:
     environment:
       DB_HOST: db
       REDIS_HOST: redis
+      SERVER_URL: http://ec2-3-137-203-144.us-east-2.compute.amazonaws.com
     depends_on:
-      db:
-        condition: service_healthy
+      - db
   nginx:
     image: nginx
     volumes:
