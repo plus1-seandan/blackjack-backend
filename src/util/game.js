@@ -116,7 +116,6 @@ const calculatePoints = (cards) => {
     }
     return tot;
   }, 0);
-
   //get all aces
   const aces = cards.filter((card) => card.value === -1);
   //if no  aces
@@ -131,6 +130,10 @@ const calculatePoints = (cards) => {
     const b = sum + 11 + (aces.length - 1);
     result.push(a);
     result.push(b);
+  }
+  const filteredRes = result.filter((val) => val <= 21);
+  if (filteredRes.length > 0) {
+    result = filteredRes;
   }
   return Math.max(...result);
 };
