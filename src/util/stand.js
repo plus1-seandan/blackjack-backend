@@ -17,16 +17,10 @@ const stand = async (gameId, playerId) => {
 };
 
 const dealerPlay = async (game, player) => {
-  console.log(
-    "*******************************Run DEALER PLAY LOGIC***************************"
-  );
   //recursive method to hit until dealer wins or busts
   const playerGame = await getPlayerGameData(game, player);
   const dealerGame = await getPlayerGameData(game, process.env.DEALER);
   if (dealerGame.points >= playerGame.points) {
-    console.log(
-      "*******************************END DEALER PLAY LOGIC***************************"
-    );
     return;
   }
   await hit(game, process.env.DEALER);
